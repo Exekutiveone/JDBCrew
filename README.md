@@ -4,8 +4,10 @@
 
 ### Datenbank initialisieren
 
-Die Spring-Boot-Anwendung im Modul `device-bridge` nutzt eine lokale SQLite-Datenbank (`data.db`).
-Führe den folgenden Befehl im Modulverzeichnis aus, um die Datenbank und das Schema anzulegen:
+Die Spring-Boot-Anwendung im Modul `device-bridge` bündelt Backend und Frontend.
+Sie nutzt eine lokale SQLite-Datenbank (`data.db`) und dient gleichzeitig die Web-Oberfläche aus.
+Führe den folgenden Befehl im Modulverzeichnis aus, um den Server zu starten
+und damit Datenbank, Schema sowie Web-Frontend bereitzustellen:
 
 ```bash
 cd device-bridge
@@ -27,4 +29,5 @@ mvn spring-boot:run
 ```
 
 Die Anwendung läuft dann standardmäßig auf `http://localhost:8080` und greift auf die eben
-initialisierte SQLite-Datenbank zu.
+initialisierte SQLite-Datenbank zu. Unter derselben Adresse steht jetzt auch die Web-Oberfläche
+zur Verfügung (`index.html`, `app.js`, `styles.css` werden von Spring Boot ausgeliefert).
