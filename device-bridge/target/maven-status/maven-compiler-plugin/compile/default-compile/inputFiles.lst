@@ -1,0 +1,7 @@
+/Users/marcrahman/device-bridge/src/main/java/de/jdbcrew/devicebridge/DeviceBridgeApplication.java
+/Users/marcrahman/device-bridge/src/main/java/de/jdbcrew/devicebridge/config/CorsConfig.java
+/Users/marcrahman/device-bridge/src/main/java/de/jdbcrew/devicebridge/controller/DeviceController.java
+/Users/marcrahman/device-bridge/src/main/java/de/jdbcrew/devicebridge/dto/CommandRequest.java
+/Users/marcrahman/device-bridge/src/main/java/de/jdbcrew/devicebridge/dto/StatusResponse.java
+/Users/marcrahman/device-bridge/src/main/java/de/jdbcrew/devicebridge/service/DeviceService.java
+/Users/marcrahman/device-bridge/src/main/java/de/jdbcrew/devicebridge/service/RaspberryPiService.java

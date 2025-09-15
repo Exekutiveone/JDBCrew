@@ -1,0 +1,13 @@
+server:
+  port: 8080
+
+# Wenn du HIER keine base-url angibst, läuft die jeweilige Service-Klasse im Mock-Modus.
+devices:
+  pi:
+    base-url: ""     # z.B. http://raspberrypi.local:8081 (später eintragen)
+  server:
+    base-url: ""     # z.B. http://server.local:8081
+
+spring:
+  jackson:
+    default-property-inclusion: non_null
