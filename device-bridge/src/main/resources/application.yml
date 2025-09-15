@@ -11,3 +11,11 @@ devices:
 spring:
   jackson:
     default-property-inclusion: non_null
+  datasource:
+    url: jdbc:sqlite:./data.db
+    driver-class-name: org.sqlite.JDBC
+    username:
+    password:
+  sql:
+    init:
+      mode: always
