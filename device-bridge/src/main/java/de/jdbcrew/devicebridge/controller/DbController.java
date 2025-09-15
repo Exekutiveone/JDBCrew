@@ -83,6 +83,12 @@ public class DbController {
         return ResponseEntity.ok(dbService.fetchItems(db, nameFilter));
     }
 
+    @GetMapping("/schema")
+    public ResponseEntity<List<Map<String, Object>>> schema(@PathVariable String db) {
+        ensureSupported(db);
+        return ResponseEntity.ok(dbService.fetchSchema());
+    }
+
     private void ensureSupported(String db) {
         if (!dbService.isSupportedDb(db)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unbekannte Datenbank: " + db);

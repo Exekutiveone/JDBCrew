@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -79,6 +80,27 @@ public class DbService {
     public List<Map<String, Object>> query(String sql) {
         // Demo: rohes SQL. Später bitte parametrisieren/whitelisten!
         return jdbc.queryForList(sql);
+    }
+
+    public List<Map<String, Object>> fetchSchema() {
+        List<Map<String, Object>> tables = jdbc.queryForList(
+                "SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+        List<Map<String, Object>> schema = new ArrayList<>();
+        for (Map<String, Object> table : tables) {
+            Object nameObj = table.get("name");
+            if (nameObj == null) {
+                continue;
+            }
+            String tableName = String.valueOf(nameObj);
+            String safeName = tableName.replace("'", "''");
+            List<Map<String, Object>> columns = jdbc.queryForList("PRAGMA table_info('" + safeName + "')");
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("table", tableName);
+            entry.put("createSql", table.get("sql"));
+            entry.put("columns", columns);
+            schema.add(entry);
+        }
+        return schema;
     }
 
     private void requireSupportedDb(String db) {

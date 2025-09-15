@@ -10,7 +10,8 @@ const CONFIG = {
     download:(db) => `/api/db/${db}/download`,                 // GET (stream; Content-Length empfohlen)
     relocate:(from,to) => `/api/admin/relocate?from=${from}&to=${to}`, // POST
     sync:    (db) => `/api/admin/sync?db=${db}`,               // POST
-    data:    (db, f) => `/api/db/${db}/data${f ? `?${encodeURIComponent(f)}`: ''}` // GET JSON
+    data:    (db, f) => `/api/db/${db}/data${f ? `?${encodeURIComponent(f)}`: ''}`, // GET JSON
+    schema:  (db) => `/api/db/${db}/schema`                    // GET JSON
   },
   headers: () => ({ /* z.B. Authorization: 'Bearer …' */ })
 };
@@ -161,6 +162,57 @@ $('btnLoadData').onclick = async () => {
     toast('Fehler beim Laden der Daten', false);
   }
 };
+
+function renderSchemaInfo(schema) {
+  const el = $('schemaOutput');
+  if (!el) return;
+  if (!Array.isArray(schema) || !schema.length) {
+    el.textContent = 'Kein Schema gefunden.';
+    return;
+  }
+  const lines = [];
+  for (const entry of schema) {
+    const tableName = entry.table || entry.name || 'unbekannt';
+    lines.push(`Tabelle: ${tableName}`);
+    const columns = Array.isArray(entry.columns) ? entry.columns : [];
+    if (!columns.length) {
+      lines.push('  • (keine Spalten gefunden)');
+    }
+    for (const col of columns) {
+      const colName = col.name ?? '(ohne Name)';
+      const type = col.type ? ` ${col.type}` : '';
+      const notNull = Number(col.notnull) === 1 ? ' NOT NULL' : '';
+      const pk = Number(col.pk) === 1 ? ' PRIMARY KEY' : '';
+      const defaultVal = col.dflt_value !== null && col.dflt_value !== undefined && col.dflt_value !== ''
+        ? ` DEFAULT ${col.dflt_value}`
+        : '';
+      lines.push(`  • ${colName}${type}${notNull}${pk}${defaultVal}`);
+    }
+    const ddl = entry.createSql || entry.sql;
+    if (ddl) {
+      lines.push(`  SQL: ${ddl}`);
+    }
+    lines.push('');
+  }
+  el.textContent = lines.join('\n').trim();
+}
+
+$('btnLoadSchema').onclick = async () => {
+  const db = $('dbSelect').value;
+  const el = $('schemaOutput');
+  if (el) el.textContent = 'Schema wird geladen…';
+  try {
+    const res = await fetch(CONFIG.BASE + CONFIG.EP.schema(db), { headers: CONFIG.headers() });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const schema = await res.json();
+    renderSchemaInfo(schema);
+    toast('Schema geladen');
+  } catch {
+    if (el) el.textContent = 'Schema konnte nicht geladen werden.';
+    toast('Fehler beim Laden des Schemas', false);
+  }
+};
+
 // CSV Export
 $('btnExport').onclick = () => {
   if (!lastData.length) return toast('Keine Daten zum Export', false);
