@@ -7,6 +7,8 @@ devices:
     base-url: ""     # z.B. http://raspberrypi.local:8081 (später eintragen)
   server:
     base-url: ""     # z.B. http://server.local:8081
+  aws:
+    base-url: ""     # z.B. https://api.aws.example.com
 
 spring:
   jackson:
