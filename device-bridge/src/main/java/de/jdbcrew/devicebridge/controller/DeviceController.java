@@ -3,22 +3,36 @@ package de.jdbcrew.devicebridge.controller;
 import de.jdbcrew.devicebridge.dto.CommandRequest;
 import de.jdbcrew.devicebridge.dto.StatusResponse;
 import de.jdbcrew.devicebridge.service.DeviceService;
-import de.jdbcrew.devicebridge.service.RaspberryPiService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class DeviceController {
 
-    private final RaspberryPiService piService;
+    private final Map<String, DeviceService> servicesByTarget;
 
-    public DeviceController(RaspberryPiService piService) {
-        this.piService = piService;
+    public DeviceController(Map<String, DeviceService> services) {
+        Map<String, DeviceService> resolved = new LinkedHashMap<>();
+        if (services != null) {
+            for (DeviceService service : services.values()) {
+                if (service == null) {
+                    continue;
+                }
+                String target = service.getTarget();
+                if (target == null || target.isBlank()) {
+                    continue;
+                }
+                resolved.putIfAbsent(target.toLowerCase(Locale.ROOT), service);
+            }
+        }
+        this.servicesByTarget = Map.copyOf(resolved);
     }
 
     @GetMapping("/health")
@@ -37,7 +51,14 @@ public class DeviceController {
     }
 
     private DeviceService resolve(String target) {
-    if ("pi".equalsIgnoreCase(target)) return piService;
-    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown target: " + target);
+        if (target == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown target: null");
+        }
+        DeviceService service = servicesByTarget.get(target.toLowerCase(Locale.ROOT));
+        if (service == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown target: " + target);
+        }
+        return service;
+    }
 }
-}
+
