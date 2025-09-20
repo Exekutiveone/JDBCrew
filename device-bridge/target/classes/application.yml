@@ -1,0 +1,29 @@
+# WICHTIG: Die Keys (db1, db2 etc.) müssen zum Dropdown passen
+
+server:
+  port: 8080
+
+devices:
+  pi:
+    base-url: "http://localhost:8080"
+  server:
+    base-url: "http://localhost:8080"
+  aws:
+    base-url: "http://localhost:8080"
+
+dbs:
+  db1:   # Raspberry Pi (MariaDB)
+    url: jdbc:mysql://192.168.0.15:3306/jdbcrew_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: jdbcrew
+    password: simon
+    driverClassName: com.mysql.cj.jdbc.Driver
+
+  db2:   # On-Prem (optional)
+    url: jdbc:mysql://192.168.0.20:3306/jdbcrew_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: 
+    password: 
+    driverClassName: com.mysql.cj.jdbc.Driver
+
+  db3:   # Lokal SQLite (optional)
+    url: jdbc:sqlite:./data.db
+    driverClassName: org.sqlite.JDBC

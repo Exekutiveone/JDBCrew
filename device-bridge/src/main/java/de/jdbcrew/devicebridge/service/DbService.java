@@ -8,104 +8,94 @@ import org.springframework.util.StringUtils;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class DbService {
 
-    private final JdbcTemplate jdbc;
-    private static final Set<String> SUPPORTED_DATABASES = Set.of("db1", "db2", "db3");
+    private final Map<String, JdbcTemplate> jdbcByKey;
+    private final Set<String> supported; // dynamisch aus Config
 
-    public DbService(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public DbService(Map<String, JdbcTemplate> jdbcTemplates) {
+        this.jdbcByKey = jdbcTemplates;
+        // erlaubte Keys aus application.yml (dbs: …)
+        this.supported = Set.copyOf(
+                jdbcTemplates.keySet().stream()
+                        .map(k -> k.toLowerCase(Locale.ROOT))
+                        .toList()
+        );
     }
 
     public boolean isSupportedDb(String key) {
-        return SUPPORTED_DATABASES.contains(key);
+        return key != null && supported.contains(key.toLowerCase(Locale.ROOT));
     }
 
     public Set<String> supportedDatabases() {
-        return SUPPORTED_DATABASES;
+        return supported;
+    }
+
+    private JdbcTemplate jdbc(String key) {
+        JdbcTemplate jt = jdbcByKey.get(key.toLowerCase(Locale.ROOT));
+        if (jt == null) throw new IllegalArgumentException("Unknown database: " + key);
+        return jt;
     }
 
     @Transactional
-    public void replaceItems(String db, List<String> names) {
-        requireSupportedDb(db);
-        jdbc.update("DELETE FROM items WHERE db = ?", db);
-        if (names == null || names.isEmpty()) {
-            return;
-        }
-        jdbc.batchUpdate("INSERT INTO items (db, name) VALUES (?, ?)", new BatchPreparedStatementSetter() {
-            @Override
-            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                ps.setString(1, db);
+    public void replaceItems(String dbKey, List<String> names) {
+        JdbcTemplate jt = jdbc(dbKey);
+        jt.update("DELETE FROM items WHERE db = ?", dbKey);
+        if (names == null || names.isEmpty()) return;
+        jt.batchUpdate("INSERT INTO items (db, name) VALUES (?, ?)", new BatchPreparedStatementSetter() {
+            @Override public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setString(1, dbKey);
                 ps.setString(2, names.get(i));
             }
-
-            @Override
-            public int getBatchSize() {
-                return names.size();
-            }
+            @Override public int getBatchSize() { return names.size(); }
         });
     }
 
-    public void deleteItems(String db) {
-        requireSupportedDb(db);
-        jdbc.update("DELETE FROM items WHERE db = ?", db);
+    public void deleteItems(String dbKey) {
+        jdbc(dbKey).update("DELETE FROM items WHERE db = ?", dbKey);
     }
 
-    public List<Map<String, Object>> fetchItems(String db, String nameFilter) {
-        requireSupportedDb(db);
-        StringBuilder sql = new StringBuilder("SELECT id, name FROM items WHERE db = ?");
-        List<Object> params = new ArrayList<>();
-        params.add(db);
-        if (StringUtils.hasText(nameFilter)) {
-            sql.append(" AND LOWER(name) LIKE ?");
-            params.add('%' + nameFilter.toLowerCase(Locale.ROOT) + '%');
+    public List<Map<String, Object>> fetchItems(String dbKey, String nameFilter) {
+        JdbcTemplate jt = jdbc(dbKey);
+        if (!StringUtils.hasText(nameFilter)) {
+            return jt.queryForList("SELECT id, name FROM items WHERE db = ? ORDER BY id", dbKey);
         }
-        sql.append(" ORDER BY id");
-        return jdbc.queryForList(sql.toString(), params.toArray());
+        return jt.queryForList(
+                "SELECT id, name FROM items WHERE db = ? AND LOWER(name) LIKE ? ORDER BY id",
+                dbKey, "%" + nameFilter.toLowerCase(Locale.ROOT) + "%"
+        );
     }
 
-    public boolean ping() {
-        Integer one = jdbc.queryForObject("SELECT 1", Integer.class);
+    public boolean ping(String dbKey) {
+        Integer one = jdbc(dbKey).queryForObject("SELECT 1", Integer.class);
         return one != null && one == 1;
     }
 
-    public List<Map<String, Object>> query(String sql) {
-        // Demo: rohes SQL. Später bitte parametrisieren/whitelisten!
-        return jdbc.queryForList(sql);
+    public List<Map<String, Object>> query(String dbKey, String sql) {
+        return jdbc(dbKey).queryForList(sql);
     }
 
-    public List<Map<String, Object>> fetchSchema() {
-        List<Map<String, Object>> tables = jdbc.queryForList(
-                "SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
-        List<Map<String, Object>> schema = new ArrayList<>();
-        for (Map<String, Object> table : tables) {
-            Object nameObj = table.get("name");
-            if (nameObj == null) {
-                continue;
-            }
-            String tableName = String.valueOf(nameObj);
-            String safeName = tableName.replace("'", "''");
-            List<Map<String, Object>> columns = jdbc.queryForList("PRAGMA table_info('" + safeName + "')");
-            Map<String, Object> entry = new LinkedHashMap<>();
-            entry.put("table", tableName);
-            entry.put("createSql", table.get("sql"));
-            entry.put("columns", columns);
-            schema.add(entry);
-        }
-        return schema;
-    }
-
-    private void requireSupportedDb(String db) {
-        if (!isSupportedDb(db)) {
-            throw new IllegalArgumentException("Unknown database: " + db);
+    public List<Map<String, Object>> fetchSchema(String dbKey) {
+        JdbcTemplate jt = jdbc(dbKey);
+        // Versuch MariaDB/MySQL
+        try {
+            return jt.queryForList("""
+                SELECT table_name AS name
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                ORDER BY table_name
+            """);
+        } catch (Exception ignore) {
+            // Fallback SQLite
+            return jt.queryForList("""
+                SELECT name
+                FROM sqlite_master
+                WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                ORDER BY name
+            """);
         }
     }
 }

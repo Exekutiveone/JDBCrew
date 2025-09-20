@@ -1,3 +1,3 @@
-de/jdbcrew/devicebridge/dto/StatusResponse.class
-de/jdbcrew/devicebridge/controller/DeviceController.class
-de/jdbcrew/devicebridge/config/CorsConfig.class
+de\jdbcrew\devicebridge\controller\DeviceController.class
+de\jdbcrew\devicebridge\dto\StatusResponse.class
+de\jdbcrew\devicebridge\config\CorsConfig.class

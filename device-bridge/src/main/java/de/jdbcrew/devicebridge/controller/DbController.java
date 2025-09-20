@@ -86,7 +86,7 @@ public class DbController {
     @GetMapping("/schema")
     public ResponseEntity<List<Map<String, Object>>> schema(@PathVariable String db) {
         ensureSupported(db);
-        return ResponseEntity.ok(dbService.fetchSchema());
+        return ResponseEntity.ok(dbService.fetchSchema(db));
     }
 
     private void ensureSupported(String db) {
