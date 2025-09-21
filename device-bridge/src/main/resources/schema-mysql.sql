@@ -1,4 +1,4 @@
--- Devices
+-- Geräte (entspricht schema-sqlite.sql)
 CREATE TABLE IF NOT EXISTS devices (
   id   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(255)    NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS devices (
   UNIQUE KEY uk_devices_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Sensors
+-- Sensor-Module pro Gerät (z. B. imu, env, power, camera)
 CREATE TABLE IF NOT EXISTS sensors (
   id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   device_id BIGINT UNSIGNED NOT NULL,
@@ -17,34 +17,31 @@ CREATE TABLE IF NOT EXISTS sensors (
   CONSTRAINT fk_sensors_device
     FOREIGN KEY (device_id) REFERENCES devices(id)
     ON DELETE CASCADE
-    ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Measurements
+-- Messwerte (eine Zeile pro Messgröße)
 CREATE TABLE IF NOT EXISTS measurements (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   sensor_id  BIGINT UNSIGNED NOT NULL,
   ts         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  location   VARCHAR(16)              NULL,  -- 'inside' | 'outside'
+  location   VARCHAR(32)              NULL,  -- 'inside' | 'outside'
   metric     VARCHAR(64)     NOT NULL,       -- 'servo1','laser1','led1','gyro_x','temp',...
   value_num  DOUBLE                  NULL,    -- numerische Werte
   value_bool TINYINT(1)              NULL,    -- 0/1
   value_text TEXT                    NULL,    -- z.B. Pfad/URL
-  unit       VARCHAR(16)             NULL,    -- 'deg','us','C','%','hPa','A','V','W','bool',...
-  meta_json  JSON                    NULL,    -- MySQL JSON; in MariaDB: LONGTEXT + CHECK(JSON_VALID(...))
+  unit       VARCHAR(32)             NULL,    -- 'deg','us','C','%','hPa','A','V','W','bool',...
+  meta_json  TEXT                    NULL,    -- optional: Zusatzinfos als JSON (Text)
   PRIMARY KEY (id),
   KEY idx_meas_sensor_ts (sensor_id, ts),
   KEY idx_meas_metric_ts (metric, ts),
   CONSTRAINT fk_meas_sensor
     FOREIGN KEY (sensor_id) REFERENCES sensors(id)
     ON DELETE CASCADE
-    ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- MariaDB (ohne echten JSON-Typ):
--- ALTER TABLE measurements MODIFY meta_json LONGTEXT NULL CHECK (JSON_VALID(meta_json));
+-- sinnvolle Indizes für Abfragen sind oben enthalten
 
--- Wide telemetry table matching final CSV format
+-- Wide telemetry table matching final CSV format (optional)
 CREATE TABLE IF NOT EXISTS telemetry (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   ts DATETIME(3) NOT NULL,
@@ -70,47 +67,15 @@ CREATE TABLE IF NOT EXISTS telemetry (
   KEY idx_telemetry_ts (ts)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Seed-Beispiel (idempotent)
-INSERT INTO devices (name)
-SELECT 'raspi-01'
-WHERE NOT EXISTS (SELECT 1 FROM devices WHERE name = 'raspi-01');
+-- Beispiel-Stammdaten (optional)
+INSERT IGNORE INTO devices (name) VALUES ('raspi-01');
 
-INSERT INTO sensors (device_id, kind, label)
-SELECT d.id, 'servo', 'servo-rail' FROM devices d
-WHERE d.name='raspi-01' AND NOT EXISTS
-  (SELECT 1 FROM sensors s WHERE s.device_id=d.id AND s.kind='servo' AND s.label='servo-rail');
-
-INSERT INTO sensors (device_id, kind, label)
-SELECT d.id, 'laser', 'laser-module' FROM devices d
-WHERE d.name='raspi-01' AND NOT EXISTS
-  (SELECT 1 FROM sensors s WHERE s.device_id=d.id AND s.kind='laser' AND s.label='laser-module');
-
-INSERT INTO sensors (device_id, kind, label)
-SELECT d.id, 'led', 'led-bar' FROM devices d
-WHERE d.name='raspi-01' AND NOT EXISTS
-  (SELECT 1 FROM sensors s WHERE s.device_id=d.id AND s.kind='led' AND s.label='led-bar');
-
-INSERT INTO sensors (device_id, kind, label)
-SELECT d.id, 'imu', 'imu-9dof' FROM devices d
-WHERE d.name='raspi-01' AND NOT EXISTS
-  (SELECT 1 FROM sensors s WHERE s.device_id=d.id AND s.kind='imu' AND s.label='imu-9dof');
-
-INSERT INTO sensors (device_id, kind, label)
-SELECT d.id, 'env', 'env-inside' FROM devices d
-WHERE d.name='raspi-01' AND NOT EXISTS
-  (SELECT 1 FROM sensors s WHERE s.device_id=d.id AND s.kind='env' AND s.label='env-inside');
-
-INSERT INTO sensors (device_id, kind, label)
-SELECT d.id, 'env', 'env-outside' FROM devices d
-WHERE d.name='raspi-01' AND NOT EXISTS
-  (SELECT 1 FROM sensors s WHERE s.device_id=d.id AND s.kind='env' AND s.label='env-outside');
-
-INSERT INTO sensors (device_id, kind, label)
-SELECT d.id, 'power', 'power-sensor' FROM devices d
-WHERE d.name='raspi-01' AND NOT EXISTS
-  (SELECT 1 FROM sensors s WHERE s.device_id=d.id AND s.kind='power' AND s.label='power-sensor');
-
-INSERT INTO sensors (device_id, kind, label)
-SELECT d.id, 'camera', 'thermal' FROM devices d
-WHERE d.name='raspi-01' AND NOT EXISTS
-  (SELECT 1 FROM sensors s WHERE s.device_id=d.id AND s.kind='camera' AND s.label='thermal');
+-- Beispiel-Sensoren für raspi-01
+INSERT IGNORE INTO sensors (device_id, kind, label) SELECT id, 'servo',  'servo-rail'   FROM devices WHERE name='raspi-01';
+INSERT IGNORE INTO sensors (device_id, kind, label) SELECT id, 'laser',  'laser-module' FROM devices WHERE name='raspi-01';
+INSERT IGNORE INTO sensors (device_id, kind, label) SELECT id, 'led',    'led-bar'      FROM devices WHERE name='raspi-01';
+INSERT IGNORE INTO sensors (device_id, kind, label) SELECT id, 'imu',    'imu-9dof'     FROM devices WHERE name='raspi-01';
+INSERT IGNORE INTO sensors (device_id, kind, label) SELECT id, 'env',    'env-inside'   FROM devices WHERE name='raspi-01';
+INSERT IGNORE INTO sensors (device_id, kind, label) SELECT id, 'env',    'env-outside'  FROM devices WHERE name='raspi-01';
+INSERT IGNORE INTO sensors (device_id, kind, label) SELECT id, 'power',  'power-sensor' FROM devices WHERE name='raspi-01';
+INSERT IGNORE INTO sensors (device_id, kind, label) SELECT id, 'camera', 'thermal'      FROM devices WHERE name='raspi-01';
