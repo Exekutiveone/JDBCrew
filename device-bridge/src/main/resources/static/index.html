@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8" />
@@ -12,18 +12,19 @@
     <span class="pill">API Base URL:</span>
     <input id="baseUrlInput" type="text" placeholder="z.B. http://localhost:8080" style="max-width:360px"/>
     <button id="saveBase" class="accent" style="width:auto">Speichern</button>
-    <span id="activeBase" class="muted">—</span>
+    <span id="activeBase" class="muted">â€”</span>
   </header>
 
   <div class="container">
     <!-- GLOBAL SETTINGS -->
     <section class="card">
-      <h2>1) Verbindung wählen</h2>
+      <h2>1) Verbindung wÃ¤hlen</h2>
       <label for="dbSelect">Datenbank</label>
       <select id="dbSelect">
-        <option value="db1">DB1 – Raspberry Pi</option>
-        <option value="db2">DB2 – On-Prem</option>
-        <option value="db3">DB3 – AWS</option>
+        <option value="dbLocal">dbLocal - Lokal (SQLite)</option>
+        <option value="db1">DB1 â€“ Raspberry Pi</option>
+        <option value="db2">DB2 â€“ On-Prem</option>
+        <option value="db3">DB3 â€“ AWS</option>
       </select>
       <p class="muted" style="margin-top:8px">
         Die GUI sendet nur HTTP Requests an API-Endpoints (kein JDBC im Frontend).
@@ -32,8 +33,8 @@
 
     <!-- UPLOAD -->
     <section class="card">
-      <h2>2) Upload → ausgewählte DB</h2>
-      <label for="fileInput">Datei auswählen</label>
+      <h2>2) Upload â†’ ausgewÃ¤hlte DB</h2>
+      <label for="fileInput">Datei auswÃ¤hlen</label>
       <input id="fileInput" type="file" />
       <div class="actions" style="margin-top:10px">
         <button id="btnUpload">Upload starten</button>
@@ -46,7 +47,7 @@
 
     <!-- DOWNLOAD -->
     <section class="card">
-      <h2>3) Download ← ausgewählte DB</h2>
+      <h2>3) Download â† ausgewÃ¤hlte DB</h2>
       <div class="actions">
         <button id="btnDownload">Download starten</button>
       </div>
@@ -63,6 +64,7 @@
         <div>
           <label>Von</label>
           <select id="relFrom">
+            <option value="dbLocal">dbLocal</option>
             <option value="db1">db1</option>
             <option value="db2">db2</option>
             <option value="db3">db3</option>
@@ -71,6 +73,7 @@
         <div>
           <label>Nach</label>
           <select id="relTo">
+            <option value="dbLocal">dbLocal</option>
             <option value="db1">db1</option>
             <option value="db2">db2</option>
             <option value="db3">db3</option>
@@ -86,7 +89,7 @@
 
     <!-- DATA VIEW -->
     <section class="card" style="grid-column: 1 / -1;">
-      <h2>5) Übersicht / Auswertung</h2>
+      <h2>5) Ãœbersicht / Auswertung</h2>
       <div class="grid-3">
         <div>
           <label for="filterText">Filter (optional)</label>
@@ -123,3 +126,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+

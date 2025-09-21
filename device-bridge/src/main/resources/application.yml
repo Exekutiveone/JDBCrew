@@ -27,3 +27,7 @@ dbs:
   db3:   # Lokal SQLite (optional)
     url: jdbc:sqlite:./data.db
     driverClassName: org.sqlite.JDBC
+
+  dbLocal:  # Lokales Test-DB (SQLite)
+    url: jdbc:sqlite:./dev.db
+    driverClassName: org.sqlite.JDBC

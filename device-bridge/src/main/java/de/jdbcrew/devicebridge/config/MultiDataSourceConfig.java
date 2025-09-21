@@ -9,9 +9,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.init.ScriptException;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,7 +51,23 @@ public class MultiDataSourceConfig {
             cfg.setInitializationFailTimeout(-1);
             try {
                 DataSource ds = new HikariDataSource(cfg);
-                map.put(key, new JdbcTemplate(ds));
+                JdbcTemplate jt = new JdbcTemplate(ds);
+                map.put(key, jt);
+
+                // Lightweight init: for SQLite targets, ensure local schema exists so uploads work.
+                if (p.getUrl() != null && p.getUrl().toLowerCase().startsWith("jdbc:sqlite:")) {
+                    try (Connection c = ds.getConnection()) {
+                        var resource = new ClassPathResource("schema.sql");
+                        if (resource.exists()) {
+                            ScriptUtils.executeSqlScript(c, resource);
+                            log.info("Initialized SQLite schema for '{}' using schema.sql", key);
+                        } else {
+                            log.warn("schema.sql not found on classpath; skipping SQLite schema init for '{}'", key);
+                        }
+                    } catch (SQLException | ScriptException se) {
+                        log.error("Failed to init SQLite schema for '{}': {}", key, se.getMessage());
+                    }
+                }
             } catch (RuntimeException ex) {
                 log.warn("Skipping DB target '{}' ({}): {}", key, p.getUrl(), ex.getMessage());
             }
